@@ -1,0 +1,58 @@
+﻿@using TentPlannerApp.Data
+@inject SettingsService SettingsService
+@inject IDialogService DialogService
+@inject DataService Data
+
+<MudOverlay @bind-Visible="Visible" DarkBackground="true">
+    <MudPaper Width="300px" Class="pa-2 d-flex flex-column">
+        <MudPaper Elevation="0" Class="d-flex pt-3 pl-3">
+            <MudText>Settings</MudText>
+            <MudSpacer />
+            <MudIconButton Style="position: absolute; top: 0px; right: 0px" Icon="@Icons.Material.Outlined.Close" OnClick="@(() => Visible = false)" />
+        </MudPaper>
+        <MudTextField Class="mx-4" HelperText="Container Name" @bind-Value="SettingsService.ContainerBaseName" />
+        <MudNumericField Class="mx-4" HelperText="Max Occupants" @bind-Value="SettingsService.MaxOccupants" />
+        <MudCheckBox Class="mx-4 mt-1" Label="Print Unallocated People" @bind-Value="SettingsService.PrintUnallocated" />
+        <MudButton Class="align-self-center my-2" Color="Color.Error" StartIcon="@Icons.Material.Filled.Delete" Variant="Variant.Filled" OnClick="@ConfirmDelete">DELETE ALL DATA</MudButton>
+    </MudPaper>
+</MudOverlay>
+
+@code {
+    private bool _visible;
+
+    [Parameter]
+    public bool Visible
+    {
+        get => _visible;
+        set
+        {
+            if (_visible != value)
+            {
+                _visible = value;
+                _ = VisibleChanged.InvokeAsync(_visible);
+            }
+        }
+    }
+
+    [Parameter]
+    public EventCallback<bool> VisibleChanged { get; set; }
+
+    private async void ConfirmDelete()
+    {
+        var parameters = new DialogParameters<Dialog>();
+        parameters.Add(x => x.ContentText, "Do you really want to delete these records? This process cannot be undone.");
+        parameters.Add(x => x.ButtonText, "Delete");
+        parameters.Add(x => x.Color, Color.Error);
+
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+
+        var dialog = await DialogService.ShowAsync<Dialog>("Delete", parameters, options);
+
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            Data.Reset();
+        }
+    }
+}
