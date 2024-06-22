@@ -1,0 +1,200 @@
+﻿@page "/"
+@using WASM_App.Overlays
+@using WASM_App.Data
+@inject SettingsService Settings
+@inject DataService Data
+@inject ISnackbar Snackbar
+
+<style>
+    @@media print {
+        .hide-on-print {
+            display: none !important;
+        }
+
+        .hide-shadow-on-print {
+            box-shadow: none !important;
+        }
+
+        .full-on-print {
+            width: 100% !important;
+        }
+
+        .overflow-on-print {
+            overflow-y: visible !important;
+        }
+
+        .tent {
+            break-inside: avoid;
+        }
+    }
+</style>
+
+<PageTitle>Tent Organiser</PageTitle>
+
+<MudDropContainer @ref="_mudDropContainer" T="Person" Items="Data.DisplayItems" ItemsSelector="@((item,dropzone) => item.Identifier == dropzone)" ItemDropped="ItemUpdated" Style="height: 100%" Class="ma-0">
+    <ChildContent>
+        <MudStack Row="true" Style="height: 100%" Spacing="0">
+            <MudPaper Class="full-on-print overflow-on-print" Width="75%" Elevation="0" Height="100%">
+                <MudPaper Class="d-flex pl-1 hide-shadow-on-print" Width="100%">
+                    <MudPaper Class="overflow-on-print" Elevation="0" Width="100%" Height="95vh" Style="overflow-y: auto; overflow-x: clip">
+                        <MudGrid Spacing="2" Style="width: 100%">
+                            @foreach (Container container in Data.Containers)
+                            {
+                                <MudItem xs="12" md="6" lg="4" Class=@GetContainerStyle(container.Id)>
+                                    <MudPaper Class=@("d-flex " + (container.Expanded ? "rounded-b-0 " : "") + GetContainerColour(container.Id)) Elevation="0" @onclick="@(() => container.Expanded = Data.Count(i => i.Identifier == container.Id) != 0 ? !container.Expanded : true)">
+                                        <MudIcon Icon="@(container.Expanded ? Icons.Material.Outlined.ExpandMore : Icons.Material.Outlined.ExpandLess)" Class="ma-2"/>
+                                        <MudInput Style="font-size: x-large; width: 60%" @bind-Value="@container.Name" DisableUnderLine="true"></MudInput>
+                                        <MudSpacer />
+                                        <MudText Class="pt-1 pr-2" Typo="Typo.h6">Count: @(Data.Count(item => item.Identifier == container.Id))</MudText>
+                                    </MudPaper>
+                                    <MudCollapse Expanded="@container.Expanded" Class=@("mb-2 " + @GetContainerColour(container.Id))>
+                                        <MudDropZone T="Person" Identifier="@container.Id" CanDrop="@((item) => Data.CanDrop(item, container.Id))" Style="@($"min-height:25px")" NoDropClass="mud-error"/>
+                                    </MudCollapse>
+                                </MudItem>
+                            }
+                        </MudGrid>
+                    </MudPaper>
+                    
+                    <MudPaper Class="mud-background-gray d-flex hide-on-print" Style="position: absolute; bottom: 0px" Height="5%" Width="75%">
+                        <MudButton StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" Variant="Variant.Filled" OnClick="@Data.AddContainer">Add @Settings.ContainerBaseName</MudButton>
+                        <MudSpacer />
+                        <MudButton StartIcon="@Icons.Material.Filled.Expand" Color="Color.Info" Variant="Variant.Filled" OnClick="@ExpandContainers">Expand All @Settings.ContainerBaseName</MudButton>
+                        <MudButton StartIcon="@Icons.Material.Filled.VerticalAlignCenter" Color="Color.Info" Variant="Variant.Filled" OnClick="@CollapseContainers">Collapse All @Settings.ContainerBaseName</MudButton>
+                        <MudSpacer/>
+                        <MudButton StartIcon="@Icons.Material.Filled.Remove" Color="Color.Error" Variant="Variant.Filled" OnClick="@Data.RemoveContainer">Remove @Settings.ContainerBaseName</MudButton>
+                    </MudPaper>
+                </MudPaper>
+            </MudPaper>
+
+            <MudPaper Class="@(Settings.PrintUnallocated && Data.Count(p => p.Identifier == "Names") != 0 ? "full-on-print overflow-on-print hide-shadow-on-print" : "hide-on-print")" Width="25%" Height="100%" Elevation="5" Style="overflow-y: auto">
+                <MudDropZone T="Person" Identifier="Names" Class="flex-grow-1 ma-4">
+                    <MudIcon Class="hide-on-print" Icon="@Icons.Material.Outlined.FileUpload" style="position: absolute; left: 0px; top: 4px" @onclick="@UploadFileOpen" />
+                    <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-4 mt-4 hide-on-print">Student Names (@(Data.Count(p => p.Identifier == "Names")))</MudText>
+                    <MudTextField Class="hide-on-print" Clearable="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Search" @bind-Value="Data.SearchText" @bind-Value:after="@refreshItems" Immediate="true"></MudTextField>
+                    <MudIcon Class="hide-on-print" Icon="@Icons.Material.Outlined.Settings" style="position: absolute; right: 0px; top: 4px" @onclick="@UpdateSettings" />
+                </MudDropZone>
+            </MudPaper>
+        </MudStack>
+    </ChildContent>
+    <ItemRenderer>
+        <MudPaper Elevation="25" Class="py-2 px-3 my-2 mx-2 d-flex align-start" Style=@("background-color: " + @GetGenderColour(context.Gender))>
+            <MudText ondblclick="this.contentEditable=true;" onblur="this.contentEditable=false;" Typo="Typo.body2" Class="mr-1">@context.Name</MudText><MudText Typo="Typo.body2">(@context.Age)</MudText>
+            <MudSpacer />
+            <MudIcon Class="hide-on-print" Color="Color.Info" Icon="@Icons.Material.Outlined.Edit" @onclick="@(() => Data.EditPerson(context))"/>
+            <MudIcon Class="hide-on-print" Color="Color.Error" Icon="@(context.Identifier == "Names" ? Icons.Material.Outlined.Delete : Icons.Material.Outlined.Remove)" @onclick="@(() => {RemoveFromContainer(context); refreshItems();})" />
+        </MudPaper>
+    </ItemRenderer>
+</MudDropContainer>
+
+<SettingsOverlay @bind-Visible="_settingsOpen"/>
+<FileOverlay @bind-Visible="_uploadFileOpen" FileUpload="@refreshItems"/>
+<EditPersonOverlay OnEdit="@(() => _mudDropContainer.Refresh())"/>
+
+@code {
+    private MudDropContainer<Person> _mudDropContainer;
+    private bool _settingsOpen = false;
+    private bool _uploadFileOpen = false;
+    private bool _editPersonOpen = false;
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender) 
+        {
+            Data.Update += (() =>
+            {
+                StateHasChanged();
+                _mudDropContainer.Refresh();
+            });
+
+            Settings.LoadFromStorage();
+            Data.LoadFromStorage();
+        }
+
+        return base.OnAfterRenderAsync(firstRender);
+    }
+
+    private void ItemUpdated(MudItemDropInfo<Person> dropItem)
+    {
+        dropItem.Item.Identifier = dropItem.DropzoneIdentifier;
+        Data.UpdatePeopleStorage();
+        refreshItems();
+    }
+
+    private void RemoveFromContainer(Person person)
+    {
+        if (person.Identifier == "Names")
+        {
+            Data.RemovePerson(person);
+        } 
+        else
+        {
+            person.Identifier = "Names";
+            refreshItems();
+        }
+    }
+
+    private void ExpandContainers()
+    {
+        Data.Containers.ForEach(container => container.Expanded = true);
+    }
+
+    private void CollapseContainers()
+    {
+        Data.Containers.ForEach(container => container.Expanded = false);
+    }
+
+    private void UpdateSettings()
+    {
+        _settingsOpen = true;
+    }
+
+    private void UploadFileOpen() {
+        _uploadFileOpen = true;
+    }
+
+    private string GetContainerColour(string containerId)
+    {
+        string colour = "mud-background-gray";
+
+        if (Data.Count(p => p.Identifier == containerId) == Settings.MaxOccupants)
+        {
+            colour = "mud-success";
+        }
+
+        if (Data.Count(p => p.Identifier == containerId) > Settings.MaxOccupants)
+        {
+            colour = "mud-error";
+        }
+
+        return colour;
+    }
+
+    private string GetContainerStyle(string containerId)
+    {
+        return "tent rounded-t px-2 pb-6 my-2 flex-grow-1";
+    }
+
+    private string GetGenderColour(string gender)
+    {
+        switch (gender)
+        {
+            case "Male":
+                {
+                    return "lightblue";
+                }
+            case "Female":
+                {
+                    return "pink";
+                }
+            default:
+                {
+                    return "lightyellow";
+                }
+        }
+    }
+
+    private void refreshItems()
+    {
+        _mudDropContainer.Refresh();
+    }
+}
