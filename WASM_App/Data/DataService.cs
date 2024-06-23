@@ -1,4 +1,5 @@
 ﻿using Blazored.LocalStorage;
+using System;
 using WASM_App.Overlays;
 
 namespace WASM_App.Data
@@ -10,8 +11,7 @@ namespace WASM_App.Data
         private List<Person> _items = new();
         public List<Person> DisplayItems = new();
         public Person? CurrentPersonEditing { get; private set; } = null;
-        public Action PersonEditingChange { get; set; }
-        public Action Update { get; set; }
+        public Action Update { get; set; } = new Action(() => { });
 
         private SettingsService _settings;
         private ILocalStorageService _localStorageService;
@@ -62,7 +62,6 @@ namespace WASM_App.Data
 
         public void EditPerson(Person person)
         {
-            PersonEditingChange?.Invoke();
             CurrentPersonEditing = person;
 
             UpdatePeopleStorage();
@@ -113,12 +112,17 @@ namespace WASM_App.Data
             UpdateContainerStorage();
         }
 
-        public void RemoveContainer()
+        public void RemoveLastContainer()
         {
             int index = Containers.Count - 1;
-            string id = Containers[index].Id;
+            RemoveContainer(Containers[index]);
+        }
+
+        public void RemoveContainer(Container container)
+        {
+            string id = container.Id;
             _items.ForEach(item => item.Identifier = item.Identifier == id ? "Names" : item.Identifier);
-            Containers.RemoveAt(index);
+            Containers.Remove(container);
 
             UpdateContainerStorage();
         }

@@ -1,18 +1,19 @@
 ﻿@using WASM_App.Data
-@inject DataService data
-@inject SettingsService settings
+@inject SettingsService SettingsService
+@inject IDialogService DialogService
+@inject DataService Data
 
-<MudOverlay Visible="data.CurrentPersonEditing != null" DarkBackground="true">
-    <MudPaper Class="pa-4"Width="400px">
+<MudOverlay @bind-Visible="Visible" DarkBackground="true">
+    <MudPaper Class="pa-4" Width="400px">
         <MudPaper Elevation="0" Class="d-flex">
-            <MudText>Editing Attendee #: @data.CurrentPersonEditing.AttendeeID</MudText>
+            <MudText>Editing Attendee #: @Data.CurrentPersonEditing.AttendeeID</MudText>
             <MudSpacer />
-            <MudIconButton Style="position: absolute; top: 0px; right: 0px" Icon="@Icons.Material.Outlined.Close" OnClick="@(() => data.StopEditing())" />
+            <MudIconButton Style="position: absolute; top: 0px; right: 0px" Icon="@Icons.Material.Outlined.Close" OnClick="@(() => Visible = false)" />
         </MudPaper>
-        
-        <MudTextField Immediate @bind-Value="data.CurrentPersonEditing.Name" @bind-Value:after=@(() => OnEdit.Invoke()) HelperText="Name"/>
-        <MudNumericField Immediate @bind-Value="data.CurrentPersonEditing.Age" @bind-Value:after=@(() => OnEdit.Invoke()) HelperText="Age" />
-        <MudSelect Immediate @bind-Value="data.CurrentPersonEditing.Gender" @bind-Value:after=@(() => OnEdit.Invoke()) HelperText="Gender">
+
+        <MudTextField Immediate @bind-Value="Data.CurrentPersonEditing.Name" @bind-Value:after=@(() => OnEdit?.Invoke()) HelperText="Name" />
+        <MudNumericField Immediate @bind-Value="Data.CurrentPersonEditing.Age" @bind-Value:after=@(() => OnEdit?.Invoke()) HelperText="Age" />
+        <MudSelect Immediate @bind-Value="Data.CurrentPersonEditing.Gender" @bind-Value:after=@(() => OnEdit?.Invoke()) HelperText="Gender">
             <MudSelectItem Value="@("Male")"></MudSelectItem>
             <MudSelectItem Value="@("Female")"></MudSelectItem>
             <MudSelectItem Value="@("Other")"></MudSelectItem>
@@ -21,12 +22,44 @@
 </MudOverlay>
 
 @code {
-    [Parameter]
-    public Action OnEdit { get; set; }
+    private bool _visible;
 
-    protected override Task OnParametersSetAsync()
+    [Parameter]
+    public bool Visible
     {
-        data.PersonEditingChange += (() => StateHasChanged());
-        return base.OnParametersSetAsync();
+        get => _visible;
+        set
+        {
+            if (_visible != value)
+            {
+                _visible = value;
+                _ = VisibleChanged.InvokeAsync(_visible);
+            }
+        }
+    }
+
+    [Parameter]
+    public EventCallback<bool> VisibleChanged { get; set; }
+
+    [Parameter]
+    public Action? OnEdit { get; set; }
+
+    private async void ConfirmDelete()
+    {
+        var parameters = new DialogParameters<Dialog>();
+        parameters.Add(x => x.ContentText, "Do you really want to delete these records? This process cannot be undone.");
+        parameters.Add(x => x.ButtonText, "Delete");
+        parameters.Add(x => x.Color, Color.Error);
+
+        var options = new DialogOptions() { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall };
+
+        var dialog = await DialogService.ShowAsync<Dialog>("Delete", parameters, options);
+
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            Data.Reset();
+        }
     }
 }
