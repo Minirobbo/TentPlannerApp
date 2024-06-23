@@ -32,3 +32,5 @@ jobs:
         with:
           BRANCH: gh-pages
           FOLDER: dist/Web/wwwroot
+      - name: Disable Jekyll
+        run: touch release/wwwroot/.nojekyll
