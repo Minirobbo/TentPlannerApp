@@ -27,11 +27,11 @@ jobs:
       - name: Publish .NET Core Project
         run: dotnet publish ./WASM_App/WASM_App.csproj -c:Release -p:GHPages=true -o dist/Web --nologo
 
+      - name: Disable Jekyll
+        run: touch dist/Web/wwwroot/.nojekyll
+
       - name: Commit wwwroot to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           BRANCH: gh-pages
           FOLDER: dist/Web/wwwroot
-          
-      - name: Disable Jekyll
-        run: touch dist/Web/wwwroot/.nojekyll
