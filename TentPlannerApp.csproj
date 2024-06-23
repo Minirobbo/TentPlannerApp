@@ -5,30 +5,10 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Content Remove="Components\EditPerson.razor" />
-  </ItemGroup>
-
   
   <ItemGroup>
     <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
     <PackageReference Include="MudBlazor" Version="6.*" />
-  </ItemGroup>
-
-  
-  <ItemGroup>
-    <UpToDateCheckInput Remove="Components\EditPerson.razor" />
-  </ItemGroup>
-
-  
-  <ItemGroup>
-    <_ContentIncludedByDefault Remove="Components\EditPerson.razor" />
-  </ItemGroup>
-
-  
-  <ItemGroup>
-    <None Include="Components\Overlays\EditPersonOverlay.razor" />
   </ItemGroup>
   
 </Project>
