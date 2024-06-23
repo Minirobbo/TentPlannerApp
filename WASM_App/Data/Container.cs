@@ -8,7 +8,7 @@
 
         public Container(string baseName, int number)
         {
-            Id = "Container " + number;
+            Id = Guid.NewGuid().ToString();
             Name = baseName + " " + number;
         }
 

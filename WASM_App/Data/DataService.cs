@@ -120,7 +120,7 @@ namespace WASM_App.Data
 
         public void RemoveContainer(Container container)
         {
-            string id = container.Id;
+            string id = container.Id.ToString();
             _items.ForEach(item => item.Identifier = item.Identifier == id ? "Names" : item.Identifier);
             Containers.Remove(container);
 
