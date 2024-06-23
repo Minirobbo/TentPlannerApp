@@ -97,7 +97,7 @@
 </MudDropContainer>
 
 <SettingsOverlay @bind-Visible="_settingsOpen"/>
-<FileOverlay @bind-Visible="_uploadFileOpen" FileUpload="@refreshItems"/>
+<FileOverlay @bind-Visible="_uploadFileOpen" FileUpload="@(() => {Data.RefreshItems(); StateHasChanged();})" />
 <EditPersonOverlay @bind-Visible="_editPersonOpen" OnEdit="@refreshItems"/>
 
 @code {

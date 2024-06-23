@@ -9,24 +9,32 @@
             <MudSpacer />
             <MudIconButton Style="position: absolute; top: 0px; right: 0px" Icon="@Icons.Material.Outlined.Close" OnClick="@(() => Visible = false)" />
         </MudPaper>
-        <MudPaper Elevation="0" Height="100%" Width="100%">
-            <MudFileUpload MaximumFileCount="1" T="IBrowserFile" FilesChanged="@UploadFile" Accept=".csv" Class="py-4 align-center">
-                <ButtonTemplate>
-                    <MudButton HtmlTag="label"
-                               Variant="Variant.Filled"
-                               Color="Color.Primary"
-                               StartIcon="@Icons.Material.Filled.Upload"
-                               for="@context.Id">
-                        Upload Files
-                    </MudButton>
-                </ButtonTemplate>
-            </MudFileUpload>
+        <MudPaper Elevation="0" Height="100%" Width="100%" Class="d-flex flex-column align-center pb-3">
+            @if (_uploading)
+            {
+                <MudProgressCircular Class="align-self-center" Color="Color.Primary" Indeterminate="true" />
+            }
+            else
+            {
+                <MudFileUpload MaximumFileCount="1" T="IBrowserFile" FilesChanged="@UploadFile" Accept=".csv" Class="py-4 align-center">
+                    <ButtonTemplate>
+                        <MudButton HtmlTag="label"
+                                   Variant="Variant.Filled"
+                                   Color="Color.Primary"
+                                   StartIcon="@Icons.Material.Filled.Upload"
+                                   for="@context.Id">
+                            Upload Files
+                        </MudButton>
+                    </ButtonTemplate>
+                </MudFileUpload>
+            }
         </MudPaper>
     </MudPaper>
 </MudOverlay>
 
 @code {
     private bool _visible;
+    private bool _uploading;
 
     [Parameter]
     public bool Visible
@@ -50,6 +58,8 @@
 
     private async void UploadFile(IBrowserFile file)
     {
+        _uploading = true;
+
         try
         {
             var stream = file.OpenReadStream();
@@ -97,5 +107,7 @@
 
         FileUpload.Invoke();
         StateHasChanged();
+        Visible = false;
+        _uploading = false;
     }
 }
