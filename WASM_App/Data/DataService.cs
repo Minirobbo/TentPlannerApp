@@ -118,6 +118,15 @@ namespace WASM_App.Data
             RemoveContainer(Containers[index]);
         }
 
+        public void RemoveContainer(Container container)
+        {
+            string id = container.Id.ToString();
+            _items.ForEach(item => item.Identifier = item.Identifier == id ? "Names" : item.Identifier);
+            Containers.Remove(container);
+
+            UpdateContainerStorage();
+        }
+
         public void ShiftUp(Container container)
         {
             int index = Containers.IndexOf(container);
@@ -126,6 +135,7 @@ namespace WASM_App.Data
                 Containers.Remove(container);
                 Containers.Insert(index - 1, container);
             }
+            UpdateContainerStorage();
         }
 
         public void ShiftDown(Container container)
@@ -136,14 +146,6 @@ namespace WASM_App.Data
                 Containers.Remove(container);
                 Containers.Insert(index + 1, container);
             }
-        }
-
-        public void RemoveContainer(Container container)
-        {
-            string id = container.Id.ToString();
-            _items.ForEach(item => item.Identifier = item.Identifier == id ? "Names" : item.Identifier);
-            Containers.Remove(container);
-
             UpdateContainerStorage();
         }
 
