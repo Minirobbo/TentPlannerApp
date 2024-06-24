@@ -118,6 +118,26 @@ namespace WASM_App.Data
             RemoveContainer(Containers[index]);
         }
 
+        public void ShiftUp(Container container)
+        {
+            int index = Containers.IndexOf(container);
+            if (index >= 1)
+            {
+                Containers.Remove(container);
+                Containers.Insert(index - 1, container);
+            }
+        }
+
+        public void ShiftDown(Container container)
+        {
+            int index = Containers.IndexOf(container);
+            if (index < Containers.Count - 1)
+            {
+                Containers.Remove(container);
+                Containers.Insert(index + 1, container);
+            }
+        }
+
         public void RemoveContainer(Container container)
         {
             string id = container.Id.ToString();
