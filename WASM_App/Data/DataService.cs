@@ -127,6 +127,28 @@ namespace WASM_App.Data
             UpdateContainerStorage();
         }
 
+        public void ShiftUp(Container container)
+        {
+            int index = Containers.IndexOf(container);
+            if (index >= 1)
+            {
+                Containers.Remove(container);
+                Containers.Insert(index - 1, container);
+            }
+            UpdateContainerStorage();
+        }
+
+        public void ShiftDown(Container container)
+        {
+            int index = Containers.IndexOf(container);
+            if (index < Containers.Count - 1)
+            {
+                Containers.Remove(container);
+                Containers.Insert(index + 1, container);
+            }
+            UpdateContainerStorage();
+        }
+
         public Container NewContainer(int number)
         {
             return new Container(_settings.ContainerBaseName, number);
