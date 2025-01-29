@@ -1,0 +1,177 @@
+﻿@inject DataService Data
+@inject SettingsService Settings
+
+<MudDropContainer @ref="DropContainer" T="Person" Items="Data.DisplayItems" ItemsSelector="@((item,dropzone) => item.Identifier == dropzone)" ItemDropped="ItemUpdated" Style="height: 100%" Class="ma-0">
+    <ChildContent>
+        <MudStack Row="true" Style="height: 100%" Spacing="0">
+            <MudPaper Class="full-on-print overflow-on-print" Width="75%" Elevation="0" Height="100%">
+                <MudPaper Class="d-flex pl-1 hide-shadow-on-print" Width="100%">
+                    <MudPaper Class="overflow-on-print" Elevation="0" Width="100%" Height="95vh" Style="overflow-y: auto; overflow-x: clip">
+                        <MudGrid Spacing="2" Style="width: 100%">
+                            @foreach (Container container in Data.Containers)
+                            {
+                                <MudItem xs="12" md="6" lg="4" Class=@GetContainerStyle(container.Id)>
+                                    <MudPaper Class=@("d-flex " + (container.Expanded ? "rounded-b-0 " : "") + GetContainerColour(container.Id)) Elevation="0">
+                                        <MudIconButton Size="Size.Small" Icon="@(container.Expanded ? Icons.Material.Outlined.ExpandMore : Icons.Material.Outlined.ExpandLess)" Class="ma-2" OnClick="@(() => container.Expanded = Data.Count(i => i.Identifier == container.Id) != 0 ? !container.Expanded : true)" />
+                                        <MudInput Style="font-size: x-large; width: 60%" @bind-Value="@container.Name" DisableUnderLine="true"></MudInput>
+                                        <MudSpacer />
+                                        @if (OverlaysController._editingContainer)
+                                        {
+                                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Outlined.ArrowUpward" Class="ma-1" OnClick="@(() => Data.ShiftUp(container))" Color="@Color.Default" />
+                                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Outlined.ArrowDownward" Class="ma-1" OnClick="@(() => Data.ShiftDown(container))" Color="@Color.Default" />
+                                            <MudIconButton Size="Size.Small" Icon="@Icons.Material.Outlined.Delete" Class="ma-2" OnClick="@(() => { Data.RemoveContainer(container); refreshItems();})" Color="@Color.Error" />
+                                        }
+                                        else
+                                        {
+                                            <MudText Class="pt-1 pr-2" Typo="Typo.h6">Count: @(Data.Count(item => item.Identifier == container.Id))</MudText>
+                                        }
+                                    </MudPaper>
+                                    <MudCollapse Expanded="@container.Expanded" Class=@("mb-2 " + @GetContainerColour(container.Id))>
+                                        <MudDropZone T="Person" Identifier="@container.Id" CanDrop="@((item) => Data.CanDrop(item, container.Id))" Style="@($"min-height:25px")" NoDropClass="mud-error" />
+                                    </MudCollapse>
+                                </MudItem>
+                            }
+                        </MudGrid>
+                    </MudPaper>
+
+                    <MudPaper Class="mud-background-gray d-flex hide-on-print" Style="position: absolute; bottom: 0px; left: 0px" Height="5%" Width="75%">
+                        <MudButton StartIcon="@Icons.Material.Filled.Add" Color="Color.Success" Variant="Variant.Filled" OnClick="@Data.AddContainer">Add @Settings.ContainerBaseName</MudButton>
+                        <MudButton StartIcon="@Icons.Material.Filled.Expand" Color="Color.Info" Variant="Variant.Filled" OnClick="@ExpandContainers">Expand All @(Settings.ContainerBaseName)s</MudButton>
+                        <MudButton StartIcon="@Icons.Material.Filled.VerticalAlignCenter" Color="Color.Info" Variant="Variant.Filled" OnClick="@CollapseContainers">Collapse All @(Settings.ContainerBaseName)s</MudButton>
+                        <MudButton StartIcon="@Icons.Material.Filled.Remove" Color="@(OverlaysController._editingContainer ? Color.Info : Color.Error)" Variant="Variant.Filled" OnClick="@(() => OverlaysController._editingContainer = !OverlaysController._editingContainer)">Edit @(Settings.ContainerBaseName)s</MudButton>
+                        <MudSpacer />
+                        <MudText Class="align-self-center pr-2" Typo="Typo.h5">Tents: @(Data.Containers.Count)</MudText>
+                        <MudSpacer />
+                        <MudText Class="align-self-center pr-2" Typo="Typo.h5">Total: @(Data.Count(p => p.Identifier != "Names"))</MudText>
+                    </MudPaper>
+                </MudPaper>
+            </MudPaper>
+
+            <MudPaper Class="@(Settings.PrintUnallocated && Data.Count(p => p.Identifier == "Names") != 0 ? "full-on-print overflow-on-print hide-shadow-on-print" : "hide-on-print")" Width="25%" Height="100%" Elevation="5" Style="overflow-y: auto">
+                <MudDropZone T="Person" Identifier="Names" Class="flex-grow-1 ma-4">
+                    <MudIcon Class="hide-on-print clickable" Icon="@Icons.Material.Outlined.FileUpload" style="position: absolute; left: 0px; top: 4px" @onclick="@UploadFileOpen" />
+                    <MudText Typo="Typo.h6" Align="Align.Center" Class="mb-4 mt-4 hide-on-print">Student Names (@(Data.Count(p => p.Identifier == "Names")))</MudText>
+                    <MudTextField Class="hide-on-print" Clearable="true" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Search" @bind-Value="Data.SearchText" @bind-Value:after="@updateSearch" Immediate="true"></MudTextField>
+                    <MudIcon Class="hide-on-print clickable" Icon="@Icons.Material.Outlined.Settings" style="position: absolute; right: 0px; top: 4px" @onclick="@UpdateSettings" />
+                </MudDropZone>
+            </MudPaper>
+        </MudStack>
+    </ChildContent>
+    <ItemRenderer>
+        <MudPaper Elevation="25" Class="py-2 px-3 my-2 mx-2 d-flex align-start" Style=@("background-color: " + @GetGenderColour(context.Gender))>
+            <MudText ondblclick="this.contentEditable=true;" onblur="this.contentEditable=false;" Typo="Typo.body2" Class="mr-1">@context.Name</MudText><MudText Typo="Typo.body2">(@context.Age)</MudText>
+            <MudSpacer />
+            <MudIcon Class="hide-on-print cursor-default" Color="Color.Info" Icon="@Icons.Material.Outlined.Edit" @onclick="@(() => EditPerson(context))" />
+            <MudIcon Class="hide-on-print cursor-default" Color="Color.Error" Icon="@(context.Identifier == "Names" ? Icons.Material.Outlined.Delete : Icons.Material.Outlined.Remove)" @onclick="@(() => {RemoveFromContainer(context); refreshItems();})" />
+        </MudPaper>
+    </ItemRenderer>
+</MudDropContainer>
+
+@code {
+    [Parameter]
+    public MudDropContainer<Person> DropContainer { get; set; }
+
+    [Parameter]
+    public OverlaysControl OverlaysController { get; set; }
+
+    private void ItemUpdated(MudItemDropInfo<Person> dropItem)
+    {
+        dropItem.Item.Identifier = dropItem.DropzoneIdentifier;
+        Data.UpdatePeopleStorage();
+        refreshItems();
+    }
+
+    private void RemoveFromContainer(Person person)
+    {
+        if (person.Identifier == "Names")
+        {
+            Data.RemovePerson(person);
+        }
+        else
+        {
+            person.Identifier = "Names";
+            refreshItems();
+        }
+    }
+
+    private void ExpandContainers()
+    {
+        Data.Containers.ForEach(container => container.Expanded = true);
+    }
+
+    private void CollapseContainers()
+    {
+        Data.Containers.ForEach(container => container.Expanded = false);
+    }
+
+    private void UpdateSettings()
+    {
+        OverlaysController._settingsOpen = true;
+        OverlaysController.Refresh();
+    }
+
+    private void UploadFileOpen()
+    {
+        OverlaysController._uploadFileOpen = true;
+        OverlaysController.Refresh();
+    }
+
+    private void EditPerson(Person person)
+    {
+        OverlaysController._editPersonOpen = true;
+        Data.EditPerson(person);
+        OverlaysController.Refresh();
+        // DialogService.Show<EditOverlay>();
+    }
+
+    private string GetContainerColour(string containerId)
+    {
+        string colour = "mud-background-gray";
+
+        if (Data.Count(p => p.Identifier == containerId) == Settings.MaxOccupants)
+        {
+            colour = "mud-success";
+        }
+
+        if (Data.Count(p => p.Identifier == containerId) > Settings.MaxOccupants)
+        {
+            colour = "mud-error";
+        }
+
+        return colour;
+    }
+
+    private string GetContainerStyle(string containerId)
+    {
+        return "tent rounded-t px-2 pb-6 my-2 flex-grow-1";
+    }
+
+    private string GetGenderColour(string gender)
+    {
+        switch (gender)
+        {
+            case "Male":
+                {
+                    return "lightblue";
+                }
+            case "Female":
+                {
+                    return "pink";
+                }
+            default:
+                {
+                    return "lightyellow";
+                }
+        }
+    }
+
+    private void updateSearch()
+    {
+        Data.RefreshItems();
+    }
+
+    private void refreshItems()
+    {
+        DropContainer.Refresh();
+    }
+}
